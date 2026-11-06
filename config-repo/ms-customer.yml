@@ -1,0 +1,16 @@
+server:
+  port: 8081
+
+spring:
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://localhost:27017}
+    database: customer_db
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+logging:
+  level:
+    com.proyecto_final.ms_customer: ${APP_LOG_LEVEL:DEBUG}       # VARIABLE DE ENTORNO (opcional)

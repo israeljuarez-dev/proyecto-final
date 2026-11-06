@@ -28,6 +28,7 @@
   <modules>
     <module>ms-config-server</module>
     <module>ms-eureka</module>
+    <module>ms-customer</module>
   </modules>
 
   <dependencyManagement>
