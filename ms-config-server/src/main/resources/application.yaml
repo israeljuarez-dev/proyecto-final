@@ -1,0 +1,14 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: ms-config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: ${CONFIG_REPO_URI:https://github.com/israeljuarez-dev/proyecto-final.git}                # VARIABLE DE ENTORNO (obligatoria)
+          default-label: main
+          search-paths: config-repo              # MODIFICADO: carpeta del repo donde viven los yml de configuración
+          clone-on-start: true
