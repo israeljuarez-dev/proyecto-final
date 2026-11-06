@@ -2,6 +2,8 @@ server:
   port: 8081
 
 spring:
+  webflux:
+    base-path: /api/v1
   mongodb:
     uri: ${MONGODB_URI:mongodb://localhost:27017}
     database: customer_db

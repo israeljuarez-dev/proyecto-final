@@ -1,0 +1,224 @@
+openapi: 3.0.3
+info:
+  title: ms-customer API
+  description: Customer management API (personal and business customers) of the banking system.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Local
+tags:
+  - name: Customers
+    description: Customer CRUD operations
+
+paths:
+  /customers:
+    get:
+      tags: [Customers]
+      summary: Find all active customers
+      operationId: findAll
+      responses:
+        '200':
+          description: List of active customers (empty if there are none)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerResponseDto'
+    post:
+      tags: [Customers]
+      summary: Create a customer
+      operationId: create
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerRequestDto'
+      responses:
+        '201':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /customers/{customerId}:
+    parameters:
+      - $ref: '#/components/parameters/CustomerId'
+    get:
+      tags: [Customers]
+      summary: Find an active customer by id
+      operationId: findById
+      responses:
+        '200':
+          description: Customer found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponseDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Customers]
+      summary: Update the contact data of a customer
+      operationId: update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomerRequestDto'
+      responses:
+        '200':
+          description: Customer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Customers]
+      summary: Delete a customer (soft delete)
+      operationId: delete
+      responses:
+        '204':
+          description: Customer deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+      example: 6650f1c2a1b2c3d4e5f60718
+
+  responses:
+    BadRequest:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    NotFound:
+      description: Customer not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    Conflict:
+      description: A customer with the same document already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    UnprocessableEntity:
+      description: Document type not allowed for the customer type
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+
+  schemas:
+    CustomerTypeEnum:
+      type: string
+      enum: [PERSONAL, BUSINESS]
+    DocumentTypeEnum:
+      type: string
+      enum: [DNI, CEX, PASSPORT, RUC]
+
+    CreateCustomerRequestDto:
+      type: object
+      required: [type, documentType, documentNumber, legalName, email, phoneNumber]
+      properties:
+        type:
+          $ref: '#/components/schemas/CustomerTypeEnum'
+        documentType:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        documentNumber:
+          type: string
+          pattern: '^[A-Za-z0-9]{6,20}$'
+          example: '45871236'
+        legalName:
+          type: string
+          maxLength: 150
+          description: Full name (personal customer) or business name (business customer)
+          example: Maria Lopez Torres
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          example: maria.lopez@mail.com
+        phoneNumber:
+          type: string
+          pattern: '^\+?[0-9]{9,15}$'
+          example: '987654321'
+
+    UpdateCustomerRequestDto:
+      type: object
+      required: [legalName, email, phoneNumber]
+      properties:
+        legalName:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          maxLength: 100
+        phoneNumber:
+          type: string
+          pattern: '^\+?[0-9]{9,15}$'
+
+    CustomerResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/CustomerTypeEnum'
+        documentType:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        documentNumber:
+          type: string
+        legalName:
+          type: string
+        email:
+          type: string
+        phoneNumber:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponseDto:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
