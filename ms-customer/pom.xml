@@ -7,27 +7,9 @@
 		<artifactId>proyecto-final</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
-	<groupId>com.proyecto-final</groupId>
+
 	<artifactId>ms-customer</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
-	<properties>
-		<rxjava.version>3.1.10</rxjava.version>
-	</properties>
+	<name>ms-customer</name>
 
 	<dependencies>
 		<dependency>
@@ -73,17 +55,6 @@
 			<version>${rxjava.version}</version>
 		</dependency>
 	</dependencies>
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-dependencies</artifactId>
-				<version>${spring-cloud.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
 
 	<build>
 		<plugins>

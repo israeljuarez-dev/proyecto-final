@@ -23,6 +23,7 @@
 
     <lombok.version>1.18.42</lombok.version>
     <spring-cloud.version>2025.1.4</spring-cloud.version>
+    <rxjava.version>3.1.10</rxjava.version>
   </properties>
 
   <modules>
