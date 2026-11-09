@@ -1,0 +1,290 @@
+openapi: 3.0.3
+info:
+  title: ms-account API
+  description: Bank account management API (savings, checking and fixed-term accounts) of the banking system.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local
+tags:
+  - name: Accounts
+    description: Account CRUD operations
+
+paths:
+  /accounts:
+    get:
+      tags: [Accounts]
+      summary: Find all active accounts
+      operationId: findAll
+      responses:
+        '200':
+          description: List of active accounts (empty if there are none)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountResponseDto'
+    post:
+      tags: [Accounts]
+      summary: Create an account
+      description: |
+        The customer is validated against ms-customer. Rules:
+        - SAVINGS: personal customers only, at most one per customer. Requires monthlyMovementLimit.
+        - CHECKING: personal customers (at most one) and business customers (no limit). Requires maintenanceFee.
+        - FIXED_TERM: personal customers only, no limit. Requires movementDayOfMonth.
+        - Exactly one of monthlyMovementLimit, maintenanceFee or movementDayOfMonth must be sent, the one matching the type.
+        - Business customers require at least one holder. Personal customers accept no holders or signers.
+      operationId: create
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequestDto'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /accounts/{accountId}:
+    parameters:
+      - $ref: '#/components/parameters/AccountId'
+    get:
+      tags: [Accounts]
+      summary: Find an active account by id
+      operationId: findById
+      responses:
+        '200':
+          description: Account found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponseDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Accounts]
+      summary: Update the conditions, holders and signers of an account
+      operationId: update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccountRequestDto'
+      responses:
+        '200':
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags: [Accounts]
+      summary: Delete an account (soft delete)
+      operationId: delete
+      responses:
+        '204':
+          description: Account deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      schema:
+        type: string
+      example: 6650f1c2a1b2c3d4e5f60718
+
+  responses:
+    BadRequest:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    NotFound:
+      description: Account not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    Conflict:
+      description: The customer already has the maximum number of accounts of this type
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    UnprocessableEntity:
+      description: Business rule violated (customer not found, account type not allowed, invalid conditions or invalid holders and signers)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    ServiceUnavailable:
+      description: ms-customer is not available
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+
+  schemas:
+    AccountTypeEnum:
+      type: string
+      enum: [SAVINGS, CHECKING, FIXED_TERM]
+    CustomerTypeEnum:
+      type: string
+      enum: [PERSONAL, BUSINESS]
+    DocumentTypeEnum:
+      type: string
+      enum: [DNI, CEX, PASSPORT]
+
+    AccountPersonRequestDto:
+      type: object
+      required: [documentType, documentNumber, fullName]
+      properties:
+        documentType:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        documentNumber:
+          type: string
+          pattern: '^[A-Za-z0-9]{6,20}$'
+          example: '45871236'
+        fullName:
+          type: string
+          maxLength: 150
+          example: Carlos Ramos Diaz
+
+    AccountPersonResponseDto:
+      type: object
+      properties:
+        documentType:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        documentNumber:
+          type: string
+        fullName:
+          type: string
+
+    CreateAccountRequestDto:
+      type: object
+      required: [customerId, type]
+      properties:
+        customerId:
+          type: string
+        type:
+          $ref: '#/components/schemas/AccountTypeEnum'
+        monthlyMovementLimit:
+          type: integer
+          minimum: 1
+          description: Required for SAVINGS only
+        maintenanceFee:
+          type: number
+          format: decimal
+          minimum: 0
+          description: Required for CHECKING only (may be 0)
+        movementDayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 28
+          description: Required for FIXED_TERM only
+        holders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountPersonRequestDto'
+        signers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountPersonRequestDto'
+
+    UpdateAccountRequestDto:
+      type: object
+      properties:
+        monthlyMovementLimit:
+          type: integer
+          minimum: 1
+        maintenanceFee:
+          type: number
+          format: decimal
+          minimum: 0
+        movementDayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 28
+        holders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountPersonRequestDto'
+        signers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountPersonRequestDto'
+
+    AccountResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+        customerId:
+          type: string
+        customerType:
+          $ref: '#/components/schemas/CustomerTypeEnum'
+        type:
+          $ref: '#/components/schemas/AccountTypeEnum'
+        monthlyMovementLimit:
+          type: integer
+        maintenanceFee:
+          type: number
+          format: decimal
+        movementDayOfMonth:
+          type: integer
+        holders:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountPersonResponseDto'
+        signers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountPersonResponseDto'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponseDto:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string

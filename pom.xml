@@ -30,6 +30,8 @@
     <module>ms-config-server</module>
     <module>ms-eureka</module>
     <module>ms-customer</module>
+    <module>ms-account</module>
+    <module>ms-credit</module>
   </modules>
 
   <dependencyManagement>
