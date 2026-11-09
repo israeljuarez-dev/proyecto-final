@@ -1,0 +1,229 @@
+openapi: 3.0.3
+info:
+  title: ms-credit API
+  description: Credit product management API (loans and credit cards) of the banking system.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Local
+tags:
+  - name: Credits
+    description: Credit CRUD operations
+
+paths:
+  /credits:
+    get:
+      tags: [Credits]
+      summary: Find all active credits
+      operationId: findAll
+      responses:
+        '200':
+          description: List of active credits (empty if there are none)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditResponseDto'
+    post:
+      tags: [Credits]
+      summary: Create a credit
+      description: |
+        The customer is validated against ms-customer. Rules:
+        - LOAN: personal customers can have at most one active loan, business customers can have several. Requires approvedAmount.
+        - CREDIT_CARD: personal and business customers, no limit. Requires creditLimit.
+        - Exactly one of approvedAmount or creditLimit must be sent, the one matching the type.
+        - A customer does not need a bank account to have a credit product.
+      operationId: create
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCreditRequestDto'
+      responses:
+        '201':
+          description: Credit created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /credits/{creditId}:
+    parameters:
+      - $ref: '#/components/parameters/CreditId'
+    get:
+      tags: [Credits]
+      summary: Find an active credit by id
+      operationId: findById
+      responses:
+        '200':
+          description: Credit found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditResponseDto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Credits]
+      summary: Update the amount of a credit
+      operationId: update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreditRequestDto'
+      responses:
+        '200':
+          description: Credit updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags: [Credits]
+      summary: Delete a credit (soft delete)
+      operationId: delete
+      responses:
+        '204':
+          description: Credit deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    CreditId:
+      name: creditId
+      in: path
+      required: true
+      schema:
+        type: string
+      example: 6650f1c2a1b2c3d4e5f60718
+
+  responses:
+    BadRequest:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    NotFound:
+      description: Credit not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    Conflict:
+      description: The personal customer already has an active loan
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    UnprocessableEntity:
+      description: Business rule violated (customer not found or amounts that do not match the credit type)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+    ServiceUnavailable:
+      description: ms-customer is not available
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseDto'
+
+  schemas:
+    CreditTypeEnum:
+      type: string
+      enum: [LOAN, CREDIT_CARD]
+    CustomerTypeEnum:
+      type: string
+      enum: [PERSONAL, BUSINESS]
+
+    CreateCreditRequestDto:
+      type: object
+      required: [customerId, type]
+      properties:
+        customerId:
+          type: string
+        type:
+          $ref: '#/components/schemas/CreditTypeEnum'
+        approvedAmount:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          description: Required for LOAN only (up to 12 integer digits and 2 decimals)
+          example: 15000.00
+        creditLimit:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          description: Required for CREDIT_CARD only (up to 12 integer digits and 2 decimals)
+          example: 5000.00
+
+    UpdateCreditRequestDto:
+      type: object
+      properties:
+        approvedAmount:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+        creditLimit:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+
+    CreditResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+        customerId:
+          type: string
+        customerType:
+          $ref: '#/components/schemas/CustomerTypeEnum'
+        type:
+          $ref: '#/components/schemas/CreditTypeEnum'
+        approvedAmount:
+          type: number
+        creditLimit:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponseDto:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string

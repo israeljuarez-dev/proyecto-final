@@ -15,4 +15,4 @@ eureka:
 
 logging:
   level:
-    com.proyecto_final.ms_customer: ${APP_LOG_LEVEL:DEBUG}       # VARIABLE DE ENTORNO (opcional)
+    com.proyecto_final.ms_customer: ${APP_LOG_LEVEL:DEBUG}
