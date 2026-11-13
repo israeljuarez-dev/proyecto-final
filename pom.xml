@@ -32,6 +32,7 @@
     <module>ms-customer</module>
     <module>ms-account</module>
     <module>ms-credit</module>
+    <module>ms-transaction</module>
   </modules>
 
   <dependencyManagement>

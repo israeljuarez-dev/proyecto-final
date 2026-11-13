@@ -1,0 +1,27 @@
+server:
+  port: 8084
+
+spring:
+  webflux:
+    base-path: /api/v1
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://localhost:27017}
+    database: transaction_db
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+clients:
+  account:
+    base-url: http://ms-account/api/v1
+  credit:
+    base-url: http://ms-credit/api/v1
+
+app:
+  zone-id: America/Lima
+
+logging:
+  level:
+    com.proyecto_final.ms_transaction: ${APP_LOG_LEVEL:DEBUG}
